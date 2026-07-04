@@ -38,6 +38,8 @@ RUN chmod -R 775 storage bootstrap/cache
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
-EXPOSE 8080
+ENV PHP_CLI_SERVER_WORKERS=4
+
+EXPOSE 10000
 
 CMD ["/start.sh"]

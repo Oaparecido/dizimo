@@ -2,12 +2,11 @@
 
 set -e
 
-if [ ! -f .env ]; then
-    echo ".env file not found. Check environment variables."
-    exit 1
+if [ -n "$RENDER_EXTERNAL_URL" ]; then
+    export APP_URL="$RENDER_EXTERNAL_URL"
 fi
 
-if [ -z "$APP_KEY" ]; then
+if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "base64:" ]; then
     php artisan key:generate --force
 fi
 
@@ -22,4 +21,4 @@ if [ "$APP_ENV" = "production" ]; then
     php artisan event:cache
 fi
 
-exec php artisan serve --host=0.0.0.0 --port=${PORT:-8080}
+exec php artisan serve --host=0.0.0.0 --port=${PORT:-10000}

@@ -4,40 +4,18 @@ services:
     env: docker
     dockerfilePath: ./Dockerfile
     dockerContext: .
+    healthCheckPath: /up
     envVars:
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
         value: false
-      - key: APP_URL
-        fromService:
-          name: dizimo
-          type: web
-          property: host
       - key: DB_CONNECTION
         value: pgsql
-      - key: DB_HOST
-        fromService:
+      - key: DB_URL
+        fromDatabase:
           name: dizimo-db
-          type: psv
-          property: host
-      - key: DB_PORT
-        value: 5432
-      - key: DB_DATABASE
-        fromService:
-          name: dizimo-db
-          type: psv
-          property: database
-      - key: DB_USERNAME
-        fromService:
-          name: dizimo-db
-          type: psv
-          property: user
-      - key: DB_PASSWORD
-        fromService:
-          name: dizimo-db
-          type: psv
-          property: password
+          property: connectionString
       - key: APP_KEY
         generateValue: true
       - key: LOG_LEVEL
