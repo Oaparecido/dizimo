@@ -1,0 +1,56 @@
+services:
+  - type: web
+    name: dizimo
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_URL
+        fromService:
+          name: dizimo
+          type: web
+          property: host
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromService:
+          name: dizimo-db
+          type: psv
+          property: host
+      - key: DB_PORT
+        value: 5432
+      - key: DB_DATABASE
+        fromService:
+          name: dizimo-db
+          type: psv
+          property: database
+      - key: DB_USERNAME
+        fromService:
+          name: dizimo-db
+          type: psv
+          property: user
+      - key: DB_PASSWORD
+        fromService:
+          name: dizimo-db
+          type: psv
+          property: password
+      - key: APP_KEY
+        generateValue: true
+      - key: LOG_LEVEL
+        value: warning
+      - key: SESSION_DRIVER
+        value: database
+      - key: QUEUE_CONNECTION
+        value: database
+      - key: CACHE_STORE
+        value: database
+
+databases:
+  - name: dizimo-db
+    plan: starter
+    databaseName: dizimo
+    user: dizimo
