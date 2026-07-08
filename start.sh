@@ -2,10 +2,6 @@
 
 set -e
 
-if [ -n "$RENDER_EXTERNAL_URL" ]; then
-    export APP_URL="$RENDER_EXTERNAL_URL"
-fi
-
 if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "base64:" ]; then
     php artisan key:generate --force
 fi

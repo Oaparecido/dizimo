@@ -1,0 +1,28 @@
+services:
+  app:
+    image: ghcr.io/${GITHUB_REPOSITORY:-dizimo/app}:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-80}:10000"
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_KEY=${APP_KEY}
+      - APP_URL=${APP_URL}
+      - DB_CONNECTION=pgsql
+      - DB_URL=${DB_URL}
+      - LOG_LEVEL=warning
+      - SESSION_DRIVER=database
+      - QUEUE_CONNECTION=database
+      - CACHE_STORE=database
+    volumes:
+      - storage-data:/app/storage
+    healthcheck:
+      test: php -r 'fsockopen("localhost", 10000) ? exit(0) : exit(1);'
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  storage-data:
