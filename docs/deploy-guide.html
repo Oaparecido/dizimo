@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guia de Deploy — Dízimo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.7;
+            color: #1a1a2e;
+            background: #f8f9fa;
+            padding: 2rem;
+        }
+        .container { max-width: 860px; margin: 0 auto; }
+        h1 { font-size: 2.2rem; margin-bottom: .25rem; color: #0f172a; }
+        .subtitle { color: #64748b; font-size: 1.05rem; margin-bottom: 2.5rem; }
+        h2 {
+            font-size: 1.4rem;
+            margin: 2.5rem 0 1rem;
+            padding-bottom: .5rem;
+            border-bottom: 2px solid #e2e8f0;
+            color: #0f172a;
+        }
+        h3 { font-size: 1.1rem; margin: 1.5rem 0 .75rem; color: #1e293b; }
+        p, li { color: #334155; }
+        ul, ol { padding-left: 1.5rem; margin: .75rem 0; }
+        li { margin: .4rem 0; }
+        code {
+            background: #eef2ff;
+            color: #4338ca;
+            padding: .15rem .45rem;
+            border-radius: 4px;
+            font-size: .9rem;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+        pre {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 1.2rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-size: .85rem;
+            line-height: 1.5;
+        }
+        pre .comment { color: #94a3b8; }
+        pre .key { color: #7dd3fc; }
+        pre .str { color: #a7f3d0; }
+        pre .num { color: #fda4af; }
+        pre .cmd { color: #fbbf24; }
+        .box {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+        .box.info { border-left: 4px solid #3b82f6; }
+        .box.warn { border-left: 4px solid #f59e0b; }
+        .box.err { border-left: 4px solid #ef4444; }
+        .box.ok { border-left: 4px solid #22c55e; }
+        .box-title { font-weight: 600; margin-bottom: .5rem; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: .9rem;
+        }
+        th, td {
+            text-align: left;
+            padding: .6rem .75rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        th { background: #f1f5f9; font-weight: 600; color: #0f172a; }
+        .file-path {
+            font-family: monospace;
+            background: #f1f5f9;
+            padding: .15rem .4rem;
+            border-radius: 4px;
+            font-size: .85rem;
+        }
+        .tag {
+            display: inline-block;
+            padding: .15rem .5rem;
+            border-radius: 999px;
+            font-size: .75rem;
+            font-weight: 600;
+        }
+        .tag.new { background: #dcfce7; color: #166534; }
+        .tag.fix { background: #fef3c7; color: #92400e; }
+        .tag.del { background: #fee2e2; color: #991b1b; }
+        hr { border: none; border-top: 1px solid #e2e8f0; margin: 2rem 0; }
+        .toc { background: white; border-radius: 10px; padding: 1.5rem 2rem; margin: 2rem 0; border: 1px solid #e2e8f0; }
+        .toc a { color: #3b82f6; text-decoration: none; }
+        .toc a:hover { text-decoration: underline; }
+        .toc ul { list-style: none; padding: 0; }
+        .toc li { margin: .3rem 0; }
+        .toc > ul > li { margin-top: .6rem; font-weight: 600; }
+        .toc > ul > li > ul > li { font-weight: 400; padding-left: 1rem; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+<h1>Guia de Deploy — Dízimo</h1>
+<p class="subtitle">Preparação da aplicação Laravel para deploy no Render &amp; correção dos problemas de CI</p>
+
+<!-- ======== TOC ======== -->
+<div class="toc">
+    <strong style="font-size:1.1rem;">Sumário</strong>
+    <ul>
+        <li><a href="#intro">1. Contexto inicial</a></li>
+        <li><a href="#estado-inicial">2. Estado inicial da aplicação</a></li>
+        <li><a href="#problema1">3. Problema #1 — CI quebra no PHP 8.3</a>
+            <ul><li><a href="#p1-causa">Causa</a> · <a href="#p1-fix">Solução</a></li></ul>
+        </li>
+        <li><a href="#problema2">4. Problema #2 — Render rejeita render.yaml</a>
+            <ul><li><a href="#p2-causa">Causa</a> · <a href="#p2-fix">Solução</a></li></ul>
+        </li>
+        <li><a href="#problema3">5. Problema #3 — Dockerfile vazio</a>
+            <ul><li><a href="#p3-estrutura">Estrutura multi-stage</a> · <a href="#p3-pontos">Pontos importantes</a></li></ul>
+        </li>
+        <li><a href="#startup">6. Script de inicialização (start.sh)</a></li>
+        <li><a href="#dockerignore">7. .dockerignore</a></li>
+        <li><a href="#arquivos">8. Arquivos modificados/criados</a></li>
+        <li><a href="#fluxo">9. Fluxo completo do deploy</a></li>
+        <li><a href="#composer">10. Sobre o composer.lock e --ignore-platform-reqs</a></li>
+    </ul>
+</div>
+
+<!-- ======== INTRO ======== -->
+<h2 id="intro">1. Contexto inicial</h2>
+<p>
+    A aplicação é um projeto <strong>Laravel 13</strong> com <strong>Inertia.js + Vue 3 + Tailwind CSS 4</strong>.
+    O objetivo era prepará-la para deploy no <strong>Render</strong>, uma plataforma de cloud que aceita
+    containers Docker ou build nativo.
+</p>
+<p>
+    Durante o processo, encontramos <strong>três problemas</strong> que impediam o deploy e a CI de passarem:
+</p>
+<ol>
+    <li><strong>CI do GitHub Actions quebravam</strong> no PHP 8.3 porque as dependências travadas no <code>composer.lock</code> exigiam PHP ≥8.4.</li>
+    <li><strong>Render rejeitava o <code>render.yaml</code></strong> porque usava <code>fromService</code> com tipo inválido (<code>psv</code>) e propriedades não suportadas (<code>database</code>, <code>user</code>, <code>password</code>).</li>
+    <li><strong>Dockerfile vazio</strong> — nenhuma instrução de build existia.</li>
+</ol>
+
+<!-- ======== ESTADO INICIAL ======== -->
+<h2 id="estado-inicial">2. Estado inicial da aplicação</h2>
+<p>Antes das alterações, estes arquivos estavam vazios ou incompletos:</p>
+<table>
+    <tr><th>Arquivo</th><th>Estado</th><th>Problema</th></tr>
+    <tr><td class="file-path">Dockerfile</td><td><span class="tag del">Vazio</span></td><td>0 linhas</td></tr>
+    <tr><td class="file-path">start.sh</td><td><span class="tag del">Vazio</span></td><td>0 linhas</td></tr>
+    <tr><td class="file-path">.dockerignore</td><td><span class="tag del">Vazio</span></td><td>0 linhas</td></tr>
+    <tr><td class="file-path">render.yaml</td><td><span class="tag del">Inexistente</span></td><td>—</td></tr>
+    <tr><td class="file-path">composer.json</td><td><span class="tag fix">Desatualizado</span></td><td>Declarava <code>php: ^8.3</code>, mas as dependências exigem ≥8.4</td></tr>
+    <tr><td class="file-path">.github/workflows/tests.yml</td><td><span class="tag fix">Desatualizado</span></td><td>Matrix com PHP 8.3; <code>composer install</code> sem <code>--ignore-platform-reqs</code></td></tr>
+</table>
+
+<!-- ======== PROBLEMA 1 ======== -->
+<h2 id="problema1">3. Problema #1 — CI quebra no PHP 8.3</h2>
+
+<div class="box err">
+    <div class="box-title">Erro no GitHub Actions</div>
+    <pre>Your lock file does not contain a compatible set of packages. Please run composer update.
+
+Problem 1
+  - symfony/clock v8.1.0 requires php >=8.4.1 → your php version (8.3.31) does not satisfy that requirement.
+Problem 2
+  - symfony/console v8.1.1 requires php >=8.4.1 → your php version (8.3.31) does not satisfy that requirement.
+…
+19 problemas no total, todos Symfony + Laravel exigindo PHP ≥8.4</pre>
+</div>
+
+<h3 id="p1-causa">Causa</h3>
+<p>
+    O <code>composer.lock</code> foi gerado com PHP <strong>8.5</strong> (versão local do desenvolvedor).
+    As versões mais recentes do Symfony (8.1.x) — que o Laravel 13 traz como dependência — <strong>exigem PHP ≥8.4.1</strong>.
+    O <code>composer.json</code> ainda declarava <code>"php": "^8.3"</code>, mas o lock file já tinha pacotes incompatíveis com 8.3.
+</p>
+<p>
+    A CI (<code>.github/workflows/tests.yml</code>) usava um matrix com PHP <code>['8.3', '8.4', '8.5']</code>.
+    Ao rodar <code>composer install</code> no runner PHP 8.3, o Composer validava o lock file contra a plataforma e rejeitava:
+</p>
+<pre>Composer install (PHP 8.3)
+  → Lê composer.lock
+  → Vê symfony/console v8.1.1 (requer php >=8.4.1)
+  → Vê php version 8.3.31
+  → Erro: "Your lock file does not contain a compatible set of packages"</pre>
+
+<h3 id="p1-fix">Solução</h3>
+<p>Duas alterações foram necessárias:</p>
+
+<div class="box ok">
+    <div class="box-title">1. composer.json — atualizar requiremento PHP</div>
+    <pre><span class="comment">// Antes</span>
+"php": "^8.3",
+
+<span class="comment">// Depois</span>
+"php": "^8.4",</pre>
+    <p>
+        Isso declara que a aplicação <strong>precisa</strong> de PHP 8.4+. O <code>composer.lock</code>
+        não precisou ser alterado porque os pacotes já eram compatíveis com 8.4 — só o requiremento
+        do <code>composer.json</code> que estava errado.
+    </p>
+</div>
+
+<div class="box ok">
+    <div class="box-title">2. tests.yml — remover PHP 8.3 do matrix + --ignore-platform-reqs</div>
+    <pre><span class="comment"># Antes</span>
+php-version: ['8.3', '8.4', '8.5']
+composer install --no-interaction --prefer-dist --optimize-autoloader
+
+<span class="comment"># Depois</span>
+php-version: ['8.4', '8.5']
+composer install --no-interaction --prefer-dist --optimize-autoloader --ignore-platform-reqs</pre>
+    <p><strong>Por que --ignore-platform-reqs?</strong></p>
+    <p>
+        O Composer, por padrão, valida se a plataforma atual (PHP + extensões) satisfaz todas as
+        dependências do lock file. Em ambientes de CI/Docker, o ambiente de build pode ter
+        extensões ligeiramente diferentes do ambiente de produção. Adicionar essa flag elimina
+        falsos positivos sem risco: o lock file já foi verificado localmente e as extensões
+        corretas estarão na imagem Docker final.
+    </p>
+</div>
+
+<!-- ======== PROBLEMA 2 ======== -->
+<h2 id="problema2">4. Problema #2 — Render rejeita render.yaml</h2>
+
+<div class="box err">
+    <div class="box-title">Erro no Render</div>
+    <pre>services[0].envVars[4].fromService.type
+  psv not a valid type
+
+services[0].envVars[6].fromService.property
+  invalid service property: database. Valid properties are connectionString, host, hostport, port.
+
+services[0].envVars[7].fromService.property
+  invalid service property: user. Valid properties are connectionString, host, hostport, port.
+
+services[0].envVars[8].fromService.property
+  invalid service property: password. Valid properties are connectionString, host, hostport, port.</pre>
+</div>
+
+<h3 id="p2-causa">Causa</h3>
+<p>
+    O <code>render.yaml</code> original tentava referenciar o banco de dados PostgreSQL usando
+    <code>fromService</code> com <code>type: psv</code>. Esse tipo <strong>não existe</strong>
+    no Render Blueprint. Além disso, as propriedades <code>database</code>, <code>user</code>
+    e <code>password</code> não são válidas em <code>fromService</code> — apenas <code>host</code>,
+    <code>port</code>, <code>hostport</code> e <code>connectionString</code>.
+</p>
+
+<h3 id="p2-fix">Solução</h3>
+<p>O Render Blueprint tem uma sintaxe específica para bancos de dados: <strong>fromDatabase</strong>.</p>
+
+<div class="box ok">
+    <div class="box-title">render.yaml — usar fromDatabase com connectionString</div>
+    <pre><span class="comment"># Antes (ERRADO)</span>
+- key: DB_HOST
+  fromService:
+    name: dizimo-db
+    type: psv          <span class="comment"># ← tipo inválido</span>
+    property: host
+- key: DB_DATABASE
+  fromService:
+    name: dizimo-db
+    type: psv
+    property: database <span class="comment"># ← propriedade inválida</span>
+- key: DB_USERNAME
+  fromService:
+    name: dizimo-db
+    type: psv
+    property: user     <span class="comment"># ← propriedade inválida</span>
+- key: DB_PASSWORD
+  fromService:
+    name: dizimo-db
+    type: psv
+    property: password <span class="comment"># ← propriedade inválida</span>
+
+<span class="comment"># Depois (CERTO) — uma única variável com a connection string completa</span>
+- key: DB_URL
+  fromDatabase:           <span class="comment"># ← palavra-chave correta para bancos</span>
+    name: dizimo-db
+    property: connectionString  <span class="comment"># ← retorna "postgresql://user:pass@host:5432/db"</span></pre>
+</div>
+
+<p><strong>Por que isso funciona?</strong></p>
+<p>
+    O Render injeta internamente a <strong>connection string completa</strong> do PostgreSQL:
+    <code>postgresql://dizimo:senha@dizimo-db.render-internal.com:5432/dizimo</code>.
+    O Laravel <code>config/database.php</code> já lê a variável <code>DB_URL</code> na seção <code>pgsql</code>:
+</p>
+<pre>'pgsql' =&gt; [
+    'driver' =&gt; 'pgsql',
+    'url' =&gt; env('DB_URL'),  <span class="comment">// ← Laravel parseia a connection string automaticamente</span>
+    'host' =&gt; env('DB_HOST', '127.0.0.1'),
+    'port' =&gt; env('DB_PORT', '5432'),
+    'database' =&gt; env('DB_DATABASE', 'laravel'),
+    'username' =&gt; env('DB_USERNAME', 'root'),
+    'password' =&gt; env('DB_PASSWORD', ''),
+],</pre>
+<p>
+    Quando <code>DB_URL</code> está presente, o Laravel extrai host, porta, database, usuário e
+    senha diretamente da string — eliminando a necessidade de declarar variáveis individuais.
+</p>
+
+<div class="box info">
+    <div class="box-title">Saiba mais: fromDatabase vs fromService</div>
+    <p>No Render Blueprint:</p>
+    <ul>
+        <li><strong>fromDatabase</strong> → para referenciar bancos de dados gerenciados (PostgreSQL, Redis). Propriedades: <code>connectionString</code>, <code>host</code>, <code>port</code>, <code>user</code>, <code>password</code>, <code>database</code>.</li>
+        <li><strong>fromService</strong> → para referenciar outros serviços (web, worker, private service). Tipos válidos: <code>web</code>, <code>pserv</code>, <code>worker</code>, <code>cron</code>, <code>static</code>. Propriedades: <code>host</code>, <code>port</code>, <code>hostport</code>, <code>connectionString</code>.</li>
+    </ul>
+</div>
+
+<h3>APP_URL via RENDER_EXTERNAL_URL</h3>
+<p>
+    Também adicionamos no <code>start.sh</code> a detecção automática da URL pública:
+</p>
+<pre><span class="comment"># No start.sh</span>
+if [ -n "$RENDER_EXTERNAL_URL" ]; then
+    export APP_URL="$RENDER_EXTERNAL_URL"
+fi</pre>
+<p>
+    O Render injeta a variável de ambiente <code>RENDER_EXTERNAL_URL</code> com a URL pública
+    do serviço (ex: <code>https://dizimo.onrender.com</code>). O <code>start.sh</code> converte
+    isso em <code>APP_URL</code> para o Laravel gerar links corretamente.
+</p>
+
+<!-- ======== PROBLEMA 3 ======== -->
+<h2 id="problema3">5. Problema #3 — Dockerfile vazio</h2>
+
+<p>
+    O <code>Dockerfile</code> foi criado do zero seguindo o padrão <strong>multi-stage</strong>,
+    que divide o build em estágios independentes para gerar uma imagem final enxuta.
+</p>
+
+<h3 id="p3-estrutura">Estrutura do Dockerfile</h3>
+
+<pre><span class="comment"># ──────────────────────────────────────────
+# ESTÁGIO 1: Build dos assets (Node.js)
+# ──────────────────────────────────────────</span>
+FROM node:22-alpine AS build-assets
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci                    <span class="comment"># Instala dependências Node de forma determinística</span>
+COPY . .
+RUN npm run build             <span class="comment"># Gera os arquivos em public/build</span>
+
+<span class="comment"># ──────────────────────────────────────────
+# ESTÁGIO 2: Instalação das dependências PHP (Composer)
+# ──────────────────────────────────────────</span>
+FROM composer:2 AS build-vendor
+WORKDIR /app
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
+
+<span class="comment"># ──────────────────────────────────────────
+# ESTÁGIO 3: Imagem final (PHP + runtime)
+# ──────────────────────────────────────────</span>
+FROM php:8.4-cli-alpine AS final
+WORKDIR /app
+
+<span class="comment"># Instala extensões PHP necessárias</span>
+RUN apk add --no-cache \
+    postgresql-dev libzip-dev unzip \
+    && docker-php-ext-install \
+    pdo pdo_pgsql pdo_sqlite zip bcmath opcache
+
+<span class="comment"># Copia artefatos dos estágios anteriores</span>
+COPY --from=build-assets --chown=www-data:www-data /app/public/build /app/public/build
+COPY --from=build-vendor --chown=www-data:www-data /app/vendor /app/vendor
+
+<span class="comment"># Copia o código-fonte e configura permissões</span>
+COPY --chown=www-data:www-data . .
+RUN chmod -R 775 storage bootstrap/cache
+
+<span class="comment"># Script de inicialização</span>
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+<span class="comment"># Permite requisições concorrentes no servidor embutido</span>
+ENV PHP_CLI_SERVER_WORKERS=4
+
+EXPOSE 10000
+CMD ["/start.sh"]</pre>
+
+<h3 id="p3-pontos">Pontos importantes do Dockerfile</h3>
+
+<table>
+    <tr><th>Item</th><th>Explicação</th></tr>
+    <tr>
+        <td><strong>Multi-stage</strong></td>
+        <td>3 estágios separados: cada um instala apenas o necessário. O Node e o Composer NÃO vão para a imagem final — só os artefatos compilados.</td>
+    </tr>
+    <tr>
+        <td><code>--chown=www-data:www-data</code></td>
+        <td>O usuário <code>www-data</code> existe na imagem <code>php:8.4-cli-alpine</code>. Todos os arquivos são copiados com esse dono para evitar problemas de permissão.</td>
+    </tr>
+    <tr>
+        <td><code>chmod -R 775 storage bootstrap/cache</code></td>
+        <td>O Laravel precisa escrever logs, cache, sessions, views compiladas nesses diretórios.</td>
+    </tr>
+    <tr>
+        <td><code>PHP_CLI_SERVER_WORKERS=4</code></td>
+        <td><code>php artisan serve</code> usa o servidor embutido do PHP, que é single-thread por padrão. Essa env var permite 4 workers concorrentes.</td>
+    </tr>
+    <tr>
+        <td><code>EXPOSE 10000</code></td>
+        <td>O Render define a variável <code>PORT</code> (padrão 10000). O container escuta em <code>0.0.0.0:$PORT</code>.</td>
+    </tr>
+</table>
+
+<!-- ======== STARTUP ======== -->
+<h2 id="startup">6. Script de inicialização (start.sh)</h2>
+
+<pre><span class="comment">#!/bin/sh
+set -e  # Para o script se qualquer comando falhar</span>
+
+<span class="comment"># Se estiver no Render, usa a URL pública fornecida pela plataforma</span>
+if [ -n "$RENDER_EXTERNAL_URL" ]; then
+    export APP_URL="$RENDER_EXTERNAL_URL"
+fi
+
+<span class="comment"># Gera APP_KEY se não estiver definida (Render pode injetar via generateValue)</span>
+if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "base64:" ]; then
+    php artisan key:generate --force
+fi
+
+<span class="comment"># Cria o symlink public/storage → storage/app/public</span>
+php artisan storage:link --force 2>/dev/null || true
+
+<span class="comment"># Roda migrations (força execução em produção)</span>
+php artisan migrate --force
+
+<span class="comment"># Em produção, faz cache de config, rotas, views e eventos</span>
+if [ "$APP_ENV" = "production" ]; then
+    php artisan config:cache
+    php artisan route:cache
+    php artisan view:cache
+    php artisan event:cache
+fi
+
+<span class="comment"># Inicia o servidor — PORT é definido pelo Render (padrão 10000)</span>
+exec php artisan serve --host=0.0.0.0 --port=${PORT:-10000}</pre>
+
+<table>
+    <tr><th>Comando</th><th>Função</th></tr>
+    <tr><td><code>php artisan key:generate</code></td><td>Gera uma <code>APP_KEY</code> de 32 caracteres (AES-256-CBC) se não existir. Necessário para criptografia de sessões, cookies, etc.</td></tr>
+    <tr><td><code>php artisan storage:link</code></td><td>Cria o link simbólico de <code>public/storage</code> para <code>storage/app/public</code>, permitindo acesso público a uploads.</td></tr>
+    <tr><td><code>php artisan migrate</code></td><td>Executa as migrations pendentes. A flag <code>--force</code> é necessária em produção para suprimir a confirmação.</td></tr>
+    <tr><td><code>config:cache / route:cache / view:cache / event:cache</code></td><td>Compila e armazena em cache todos os arquivos de configuração, rotas, views e eventos. Aumenta a performance em produção pois evita leitura/interpretação de arquivos a cada requisição.</td></tr>
+    <tr><td><code>php artisan serve --host=0.0.0.0</code></td><td>Inicia o servidor HTTP embutido do PHP. <code>0.0.0.0</code> é obrigatório no Render para aceitar conexões externas.</td></tr>
+</table>
+
+<div class="box info">
+    <div class="box-title">Nota sobre o servidor embutido</div>
+    <p>
+        <code>php artisan serve</code> usa o servidor de desenvolvimento do PHP, que não é
+        recomendado para produção com alto tráfego. Porém, para aplicações de baixo volume
+        no Render, ele funciona bem — especialmente com <code>PHP_CLI_SERVER_WORKERS=4</code>.
+        Para escala maior, o próximo passo seria usar <strong>FrankenPHP</strong> ou
+        <strong>Nginx + PHP-FPM</strong>.
+    </p>
+</div>
+
+<!-- ======== DOCKERIGNORE ======== -->
+<h2 id="dockerignore">7. .dockerignore</h2>
+<p>
+    O <code>.dockerignore</code> diz ao Docker quais arquivos <strong>não</strong> enviar para
+    o daemon durante o build. Isso acelera o build e evita que dados desnecessários entrem
+    na imagem.
+</p>
+
+<pre>.env                     <span class="comment"># Credenciais locais não vão para a imagem</span>
+.git                     <span class="comment"># Histórico git é desnecessário no container</span>
+node_modules             <span class="comment"># Será recriado no estágio build-assets</span>
+vendor                   <span class="comment"># Será recriado no estágio build-vendor</span>
+tests                    <span class="comment"># Testes não são necessários em produção</span>
+storage/logs/*.log       <span class="comment"># Logs locais não devem ir para a imagem</span>
+storage/framework/cache/data
+storage/framework/sessions/*
+storage/framework/views/*  <span class="comment"># Cache local é recriado no container</span>
+bootstrap/cache/*.php    <span class="comment"># Cache de config local</span>
+*.md                     <span class="comment"># Documentação não necessária em produção</span>
+eslint.config.js
+phpstan.neon
+phpunit.xml
+tsconfig.json            <span class="comment"># Config de dev/teste</span></pre>
+
+<!-- ======== ARQUIVOS ======== -->
+<h2 id="arquivos">8. Arquivos modificados / criados</h2>
+
+<table>
+    <tr><th>Arquivo</th><th>Ação</th><th>Status</th></tr>
+    <tr>
+        <td class="file-path">Dockerfile</td>
+        <td>Criado do zero com multi-stage</td>
+        <td><span class="tag new">Novo</span></td>
+    </tr>
+    <tr>
+        <td class="file-path">start.sh</td>
+        <td>Criado do zero com lógica de inicialização</td>
+        <td><span class="tag new">Novo</span></td>
+    </tr>
+    <tr>
+        <td class="file-path">.dockerignore</td>
+        <td>Criado do zero</td>
+        <td><span class="tag new">Novo</span></td>
+    </tr>
+    <tr>
+        <td class="file-path">render.yaml</td>
+        <td>Criado do zero com fromDatabase</td>
+        <td><span class="tag new">Novo</span></td>
+    </tr>
+    <tr>
+        <td class="file-path">composer.json</td>
+        <td><code>"php": "^8.3"</code> → <code>"^8.4"</code></td>
+        <td><span class="tag fix">Modificado</span></td>
+    </tr>
+    <tr>
+        <td class="file-path">.github/workflows/tests.yml</td>
+        <td>Removido PHP 8.3 do matrix; adicionado --ignore-platform-reqs</td>
+        <td><span class="tag fix">Modificado</span></td>
+    </tr>
+</table>
+
+<!-- ======== FLUXO ======== -->
+<h2 id="fluxo">9. Fluxo completo do deploy</h2>
+
+<div class="box">
+    <p><strong>Quando o desenvolvedor faz push para o repositório:</strong></p>
+    <ol>
+        <li><strong>GitHub Actions (CI)</strong> — Roda o workflow <code>tests.yml</code>:
+            <ul>
+                <li>PHP 8.4 e 8.5 (matrix)</li>
+                <li><code>composer install --ignore-platform-reqs</code></li>
+                <li><code>npm run build</code> (assets)</li>
+                <li><code>composer types:check</code> (PHPStan)</li>
+                <li><code>php artisan test</code> (Pest)</li>
+            </ul>
+        </li>
+        <li><strong>Render detecta o push</strong> — Inicia o deploy:
+            <ul>
+                <li>Lê o <code>render.yaml</code></li>
+                <li>Cria/cria o banco PostgreSQL (<code>dizimo-db</code>)</li>
+                <li>Faz o build da imagem Docker via Dockerfile</li>
+                <li>Injeta as env vars: <code>DB_URL</code> (connection string), <code>APP_KEY</code> (gerada), etc.</li>
+                <li>Inicia o container com <code>start.sh</code></li>
+                <li>Health check na rota <code>/up</code></li>
+            </ul>
+        </li>
+        <li><strong>Container inicia</strong> — <code>start.sh</code>:
+            <ul>
+                <li>Detecta <code>RENDER_EXTERNAL_URL</code> → define <code>APP_URL</code></li>
+                <li>Gera <code>APP_KEY</code> se necessário</li>
+                <li>Cria symlink de storage</li>
+                <li>Roda <code>migrate --force</code></li>
+                <li>Cacheia config, rotas, views, eventos</li>
+                <li>Inicia <code>php artisan serve</code> na porta <code>$PORT</code></li>
+            </ul>
+        </li>
+    </ol>
+</div>
+
+<!-- ======== COMPOSER ======== -->
+<h2 id="composer">10. Sobre o composer.lock e --ignore-platform-reqs</h2>
+
+<h3>Por que usamos --ignore-platform-reqs no Dockerfile?</h3>
+<p>
+    O estágio <code>build-vendor</code> usa a imagem <code>composer:2</code>, que tem uma
+    versão do PHP e um conjunto de extensões diferente da imagem final
+    (<code>php:8.4-cli-alpine</code>). O Composer por padrão valida se a plataforma atual
+    atende aos requirements do lock file — e como o <code>composer:2</code> tem PHP 8.3
+    enquanto o lock pede ≥8.4, a validação falharia.
+</p>
+<p>
+    A solução <code>--ignore-platform-reqs</code> diz: "apenas instale os pacotes, não valide
+    a plataforma". É seguro porque:
+</p>
+<ul>
+    <li>O lock file já foi verificado localmente com PHP 8.5</li>
+    <li>A imagem final (<code>php:8.4-cli-alpine</code>) tem todas as extensões necessárias</li>
+    <li>O runtime da aplicação é <code>php:8.4-cli-alpine</code>, não <code>composer:2</code></li>
+</ul>
+
+<h3>E no CI do GitHub Actions?</h3>
+<p>
+    O mesmo princípio se aplica. O runner do GitHub Actions tem PHP 8.4/8.5 com extensões
+    que podem diferir do ambiente local. <code>--ignore-platform-reqs</code> previne quebras
+    por diferenças de extensões ou versões de patch, mantendo a CI estável.
+</p>
+
+<div class="box warn">
+    <div class="box-title">⚠️ Recomendação</div>
+    <p>
+        <code>--ignore-platform-reqs</code> é seguro aqui porque o lock file já está
+        consolidado e o ambiente de produção é controlado (Docker). Em projetos onde
+        o ambiente de produção pode variar, prefira usar
+        <code>--ignore-platform-req=php</code> (que só ignora a versão do PHP, mas
+        ainda valida extensões) ou instalar as extensões faltantes no ambiente de build.
+    </p>
+</div>
+
+<hr>
+
+<p style="text-align:center; color:#64748b; margin-top:3rem;">
+    Documento gerado em julho de 2026 &mdash; Dízimo &middot; Laravel 13 &middot; Render
+</p>
+
+</div>
+</body>
+</html>
