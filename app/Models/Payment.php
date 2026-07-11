@@ -8,6 +8,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property-read Tither|null $tither
+ * @property-read Agent|null $agent
+ */
 #[Fillable(['tither_id', 'agent_id', 'amount', 'payment_date', 'payment_time', 'reference_month', 'reference_year'])]
 class Payment extends Model
 {
@@ -22,11 +26,13 @@ class Payment extends Model
         ];
     }
 
+    /** @return BelongsTo<Tither, $this> */
     public function tither(): BelongsTo
     {
         return $this->belongsTo(Tither::class);
     }
 
+    /** @return BelongsTo<Agent, $this> */
     public function agent(): BelongsTo
     {
         return $this->belongsTo(Agent::class);

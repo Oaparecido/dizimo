@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property-read HasMany<Payment, $this> $payments
+ */
 #[Fillable(['name', 'email', 'phone', 'address', 'birth_date', 'partner_name'])]
 class Tither extends Model
 {
@@ -21,6 +24,7 @@ class Tither extends Model
         ];
     }
 
+    /** @return HasMany<Payment, $this> */
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);

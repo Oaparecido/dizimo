@@ -6,6 +6,7 @@ use App\Models\Tither;
 
 class TitherService
 {
+    /** @param array<string, mixed> $data */
     public function create(array $data): Tither
     {
         return Tither::create([
