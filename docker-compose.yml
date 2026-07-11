@@ -1,0 +1,43 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:10000"
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8000
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: dizimo
+      DB_USERNAME: dizimo
+      DB_PASSWORD: secret
+      DB_SEED: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - storage-data:/app/storage
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: dizimo
+      POSTGRES_USER: dizimo
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U dizimo
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:
+  storage-data:

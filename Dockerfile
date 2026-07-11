@@ -1,17 +1,10 @@
-FROM node:22-alpine AS build-assets
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-RUN npm ci
-
-COPY . .
-RUN npm run build
-
-FROM composer:2 AS build-vendor
+FROM composer:2 AS vendor
 WORKDIR /app
 
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
+COPY artisan .
+COPY bootstrap/app.php bootstrap/providers.php bootstrap/
+RUN composer install --no-dev --no-interaction --ignore-platform-reqs --no-scripts
 
 FROM php:8.4-cli-alpine AS final
 WORKDIR /app
@@ -23,13 +16,11 @@ RUN apk add --no-cache \
     && docker-php-ext-install \
     pdo \
     pdo_pgsql \
-    pdo_sqlite \
     zip \
     bcmath \
     opcache
 
-COPY --from=build-assets --chown=www-data:www-data /app/public/build /app/public/build
-COPY --from=build-vendor --chown=www-data:www-data /app/vendor /app/vendor
+COPY --from=vendor --chown=www-data:www-data /app/vendor /app/vendor
 
 COPY --chown=www-data:www-data . .
 
