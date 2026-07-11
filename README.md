@@ -11,13 +11,13 @@ API para gestão de dizimistas, escalas de colaboradores e registro de pagamento
 
 ## Modelagem
 
-| Modelo | Tabela | Descrição |
-|--------|--------|-----------|
-| `Agent` | `agents` | Colaboradores que fazem login e administram o sistema |
-| `Tither` | `tithers` | Dizimistas (membros da igreja) |
-| `Community` | `communities` | Comunidades onde as escalas acontecem |
-| `Rotation` | `rotations` | Escala fixa mensal de cada agente |
-| `Payment` | `payments` | Registro de pagamentos dos dizimistas |
+| Modelo      | Tabela        | Descrição                                             |
+| ----------- | ------------- | ----------------------------------------------------- |
+| `Agent`     | `agents`      | Colaboradores que fazem login e administram o sistema |
+| `Tither`    | `tithers`     | Dizimistas (membros da igreja)                        |
+| `Community` | `communities` | Comunidades onde as escalas acontecem                 |
+| `Rotation`  | `rotations`   | Escala fixa mensal de cada agente                     |
+| `Payment`   | `payments`    | Registro de pagamentos dos dizimistas                 |
 
 ### Regras de negócio
 
@@ -49,74 +49,8 @@ docker compose down -v && docker compose up -d
 ```
 
 Na primeira execução o `start.sh` automaticamente:
+
 1. Aguarda o PostgreSQL ficar pronto
 2. Gera a `APP_KEY`
 3. Executa as migrations
 4. Popula o banco com o agent admin
-
-## API
-
-### Públicas
-
-```
-GET  /                      → {"message": "Dizimo API"}
-POST /login                 → { token, agent }
-```
-
-### Autenticadas (Bearer token + admin)
-
-```
-POST /tithers               → Cria um novo dizimista
-```
-
-#### `POST /login`
-
-```bash
-curl -s -X POST http://localhost:8000/login \
-  -H "Accept: application/json" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@dizimo.com","password":"password"}'
-```
-
-Resposta:
-```json
-{
-  "token": "1|...",
-  "agent": { "id": 1, "name": "Admin", "email": "admin@dizimo.com", "is_admin": true }
-}
-```
-
-#### `POST /tithers`
-
-```bash
-TOKEN="1|seu_token_aqui"
-curl -X POST http://localhost:8000/tithers \
-  -H "Accept: application/json" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d '{
-    "name": "Maria",
-    "email": "maria@email.com",
-    "phone": "11988888888",
-    "address": "Rua B, 456",
-    "birth_date": "1990-05-15",
-    "partner_name": "João"
-  }'
-```
-
-## Credenciais iniciais
-
-| Email | Senha | Tipo |
-|-------|-------|------|
-| admin@dizimo.com | password | Admin (`is_admin: true`) |
-
-## Banco de dados
-
-```
-DB_CONNECTION=pgsql
-DB_HOST=localhost
-DB_PORT=5432
-DB_DATABASE=dizimo
-DB_USERNAME=dizimo
-DB_PASSWORD=secret
-```
